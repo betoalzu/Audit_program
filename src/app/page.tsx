@@ -121,6 +121,29 @@ function displayAnswer(answer: Answer | undefined) {
   return answer?.trim() || "Sin respuesta";
 }
 
+function LogoMark() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 40 40" fill="none">
+      <rect width="40" height="40" rx="10" fill="#0B132B" />
+      <path d="M12 28L20 12L28 28" stroke="#10B981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M15 23H25" stroke="#06B6D4" strokeWidth="2.5" strokeLinecap="round" />
+      <circle cx="20" cy="12" r="3" fill="#10B981" />
+      <circle cx="12" cy="28" r="2.5" fill="#06B6D4" />
+      <circle cx="28" cy="28" r="2.5" fill="#06B6D4" />
+      <path d="M20 12V23" stroke="#10B981" strokeWidth="1.5" strokeDasharray="2 2" />
+    </svg>
+  );
+}
+
+function Brand() {
+  return (
+    <div className="brand">
+      <span className="brand-logo"><LogoMark /></span>
+      <span className="brand-copy"><strong>Atlas de procesos</strong><small>Entrevista de diagnóstico estructural</small></span>
+    </div>
+  );
+}
+
 export default function Home() {
   const [screen, setScreen] = useState<"welcome" | "questions" | "review" | "done">("welcome");
   const [questionIndex, setQuestionIndex] = useState(0);
@@ -163,8 +186,8 @@ export default function Home() {
     return (
       <main className="shell">
         <header className="topbar">
-          <div className="brand"><span className="brand-mark">A</span><span>Atlas de procesos</span></div>
-          <span className="status"><span className="status-dot" /> Demo privada</span>
+          <Brand />
+          <span className="status"><span className="status-dot" /> Demo local</span>
         </header>
         <section className="hero-grid">
           <div className="hero-copy">
@@ -189,7 +212,7 @@ export default function Home() {
   if (screen === "review") {
     return (
       <main className="shell narrow-shell">
-        <header className="topbar"><div className="brand"><span className="brand-mark">A</span><span>Atlas de procesos</span></div><span className="status"><span className="status-dot" /> Revisión</span></header>
+        <header className="topbar"><Brand /><span className="status"><span className="status-dot" /> Revisión</span></header>
         <section className="review-header"><p className="kicker">Último paso</p><h1>Revisa lo que hemos entendido.</h1><p>Estos datos son un borrador editable. En la siguiente fase se usarán para calcular el diagnóstico.</p></section>
         <section className="summary-card" aria-label="Resumen de respuestas">
           {questions.map((question, index) => <div className="summary-row" key={question.id}><div><span className="summary-label">{question.title}</span><strong>{displayAnswer(answers[question.id])}</strong></div><button className="text-button" onClick={() => { setQuestionIndex(index); setScreen("questions"); }}>Editar</button></div>)}
@@ -207,7 +230,7 @@ export default function Home() {
 
   return (
     <main className="shell narrow-shell">
-      <header className="topbar"><button className="back-link" onClick={goBack} aria-label="Volver">← <span>Salir</span></button><div className="brand"><span className="brand-mark">A</span><span>Atlas de procesos</span></div><span className="step-count">{questionIndex + 1} / {questions.length}</span></header>
+      <header className="topbar"><button className="back-link" onClick={goBack} aria-label="Pausar y salir">← <span>Pausar y salir</span></button><Brand /><div className="progress-meta"><strong>{questionIndex + 1}</strong><span>/ {questions.length}</span><small>Tiempo est.: ~7 min</small></div></header>
       <div className="progress-track" aria-label={`Progreso: ${progress}%`}><span style={{ width: `${progress}%` }} /></div>
       <section className="question-section">
         <p className="kicker">{currentQuestion.eyebrow}</p>
