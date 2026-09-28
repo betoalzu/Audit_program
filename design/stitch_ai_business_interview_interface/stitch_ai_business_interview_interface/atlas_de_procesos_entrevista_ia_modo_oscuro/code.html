@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Atlas de Procesos | Diagnóstico IA de Madurez Operativa</title>
+<!-- Google Fonts: Space Grotesk & Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=Space+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN with Forms & Container Queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Custom Configuration -->
+<script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['Space Grotesk', 'monospace'],
+            display: ['Space Grotesk', 'sans-serif']
+          },
+          colors: {
+            brand: {
+              emerald: '#10B981',
+              cyan: '#06B6D4',
+              accent: '#34D399',
+              dark: '#0B132B',
+              slateBg: '#090D16',
+              surface: 'rgba(15, 23, 42, 0.65)'
+            }
+          },
+          animation: {
+            'pulse-glow': 'pulseGlow 2.5s infinite ease-in-out',
+            'waveform': 'wave 1.2s ease-in-out infinite alternate',
+            'blink': 'blink 1.06s infinite step-start'
+          },
+          keyframes: {
+            pulseGlow: {
+              '0%, 100%': { opacity: '0.4', transform: 'scale(1)' },
+              '50%': { opacity: '0.85', transform: 'scale(1.05)' }
+            },
+            wave: {
+              '0%': { height: '4px' },
+              '100%': { height: '24px' }
+            },
+            blink: {
+              '0%, 100%': { opacity: '1' },
+              '50%': { opacity: '0' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+<!-- BEGIN: Custom Styling -->
+<style data-purpose="ambient-background">
+    body {
+      background-color: #070B12;
+      color: #E2E8F0;
+      overflow-x: hidden;
+    }
+    .ambient-glow-emerald {
+      position: absolute;
+      top: 5%;
+      left: 20%;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, rgba(16, 185, 129, 0) 70%);
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .ambient-glow-cyan {
+      position: absolute;
+      bottom: 10%;
+      right: 15%;
+      width: 580px;
+      height: 580px;
+      background: radial-gradient(circle, rgba(6, 182, 212, 0.1) 0%, rgba(6, 182, 212, 0) 70%);
+      filter: blur(90px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .grid-matrix {
+      background-size: 40px 40px;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    }
+  </style>
+<style data-purpose="component-effects">
+    .glass-panel {
+      background: rgba(13, 20, 36, 0.72);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+    .glow-input-container {
+      box-shadow: 0 0 25px -4px rgba(16, 185, 129, 0.25);
+    }
+    .neon-border-active {
+      border: 1px solid rgba(16, 185, 129, 0.7);
+    }
+  </style>
+<!-- END: Custom Styling -->
+</head>
+<body class="min-h-screen flex flex-col font-sans grid-matrix relative select-none antialiased">
+<!-- Visual Background Ambient Accents -->
+<div class="ambient-glow-emerald"></div>
+<div class="ambient-glow-cyan"></div>
+<!-- BEGIN: MainHeader -->
+<header class="relative z-20 border-b border-slate-800/80 glass-panel">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+<!-- Left: Exit / Pause session -->
+<div class="flex items-center space-x-3">
+<a class="inline-flex items-center space-x-2 text-xs font-mono tracking-wider uppercase text-slate-400 hover:text-emerald-400 transition-colors py-2 px-3 rounded-lg hover:bg-slate-800/60 border border-transparent hover:border-slate-700" data-purpose="exit-action" href="#salir">
+<svg class="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M14 5l7 7m0 0l-7 7m7-7H3" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span>Pausar y Salir</span>
+</a>
+<div class="hidden sm:block h-4 w-px bg-slate-800"></div>
+<span class="hidden sm:inline-block px-2.5 py-1 text-[11px] font-mono tracking-wider bg-slate-800/80 text-emerald-400 rounded-md border border-emerald-500/20">
+          AI ENGINE v2.4 • LIVE
+        </span>
+</div>
+<!-- Center: Atlas Brand Identity -->
+<div class="flex items-center space-x-3.5" data-purpose="brand-center">
+<div class="relative w-9 h-9 rounded-xl overflow-hidden shadow-lg shadow-emerald-500/10 ring-1 ring-emerald-500/30">
+<!-- Logo provided via DATA:IMAGE:IMAGE_3 source markup representation -->
+<svg class="w-full h-full" fill="none" viewbox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+<rect fill="#0B132B" height="40" rx="10" width="40"></rect>
+<path d="M12 28L20 12L28 28" stroke="#10B981" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"></path>
+<path d="M15 23H25" stroke="#06B6D4" stroke-linecap="round" stroke-width="2.5"></path>
+<circle cx="20" cy="12" fill="#10B981" r="3"></circle>
+<circle cx="12" cy="28" fill="#06B6D4" r="2.5"></circle>
+<circle cx="28" cy="28" fill="#06B6D4" r="2.5"></circle>
+<path d="M20 12V23" stroke="#10B981" stroke-dasharray="2 2" stroke-width="1.5"></path>
+</svg>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center space-x-2">
+<h1 class="text-sm font-mono font-bold tracking-widest text-slate-100 uppercase">Atlas de Procesos</h1>
+<span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+</div>
+<span class="text-[10px] text-slate-400 font-mono tracking-wider">Entrevista de Diagnóstico Estructural</span>
+</div>
+</div>
+<!-- Right: Step Progress & Voice Activity Status -->
+<div class="flex items-center space-x-5" data-purpose="progress-metrics">
+<!-- Audio Visualizer Indicator -->
+<div class="hidden lg:flex items-center space-x-2 py-1.5 px-3 rounded-full bg-slate-900/90 border border-slate-700/60 shadow-inner">
+<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+<span class="text-[11px] font-mono text-slate-300">Modo Voz</span>
+<div class="flex items-center space-x-0.5 ml-1 h-3">
+<span class="w-0.5 bg-emerald-400 animate-waveform" style="animation-delay: 0.1s"></span>
+<span class="w-0.5 bg-cyan-400 animate-waveform" style="animation-delay: 0.3s"></span>
+<span class="w-0.5 bg-emerald-300 animate-waveform" style="animation-delay: 0.2s"></span>
+<span class="w-0.5 bg-cyan-300 animate-waveform" style="animation-delay: 0.4s"></span>
+</div>
+</div>
+<!-- Progress Counter -->
+<div class="text-right">
+<div class="flex items-center justify-end space-x-2 font-mono text-xs">
+<span class="text-emerald-400 font-semibold">1</span>
+<span class="text-slate-500">/</span>
+<span class="text-slate-400">12</span>
+<span class="ml-1 text-[11px] text-slate-400 hidden sm:inline">(8%)</span>
+</div>
+<p class="text-[10px] text-slate-400 font-mono">Tiempo est.: ~7 min</p>
+</div>
+</div>
+</div>
+<!-- Active Glowing Linear Progress Bar -->
+<div class="w-full bg-slate-800/60 h-1 relative overflow-hidden">
+<!-- 8.33% progress (Step 1/12) with neon gradient -->
+<div class="h-full bg-gradient-to-r from-emerald-500 via-cyan-400 to-emerald-300 w-[8.33%] relative transition-all duration-500 ease-out shadow-[0_0_12px_rgba(16,185,129,0.8)]">
+<!-- Leading glowing tip particle -->
+<div class="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full shadow-[0_0_8px_#ffffff]"></div>
+</div>
+</div>
+</header>
+<!-- END: MainHeader -->
+<!-- BEGIN: MainContentArea -->
+<main class="flex-1 relative z-10 flex flex-col justify-between max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start flex-1">
+<!-- Primary Question Column (Col 1-8) -->
+<div class="lg:col-span-8 flex flex-col justify-center pt-2 sm:pt-6 space-y-8" data-purpose="question-container">
+<!-- Category & Phase Indicator -->
+<div class="inline-flex items-center space-x-2.5">
+<div class="p-1.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<span class="text-xs font-mono font-semibold uppercase tracking-widest text-emerald-400">
+            Fase 1: Contexto Organizacional • Sobre tu Empresa
+          </span>
+</div>
+<!-- Main Question Title -->
+<div class="space-y-3">
+<h2 class="text-4xl sm:text-5xl lg:text-6xl font-display font-bold tracking-tight text-white leading-tight">
+            ¿Cómo se llama tu <span class="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">empresa?</span>
+</h2>
+<p class="text-base sm:text-lg text-slate-400 font-normal max-w-2xl leading-relaxed">
+            Usaremos este nombre solo para identificar el diagnóstico y parametrizar los benchmarks del sector en tu mapa operativo.
+          </p>
+</div>
+<!-- Active Input Field Workspace -->
+<div class="space-y-4 pt-2" data-purpose="answer-input-zone">
+<div class="relative glass-panel rounded-2xl neon-border-active glow-input-container p-2.5 sm:p-3 transition-all duration-300 group">
+<div class="flex items-center px-4 py-2">
+<!-- Visual Indicator / Brand Node Symbol -->
+<div class="w-3 h-3 rounded-full bg-emerald-400 shadow-[0_0_10px_#10B981] mr-4 flex-shrink-0 animate-pulse"></div>
+<!-- Core Styled Form Input -->
+<input autofocus="" class="w-full bg-transparent border-0 text-2xl sm:text-3xl font-display font-medium text-white tracking-wide placeholder-slate-600 focus:outline-none focus:ring-0 p-0" id="companyNameInput" placeholder="Escribe el nombre aquí..." type="text" value="TinSab"/>
+<!-- Voice Transcription Micro-Button -->
+<button class="ml-3 p-3 rounded-xl bg-slate-800/80 hover:bg-emerald-500/20 text-slate-300 hover:text-emerald-400 border border-slate-700 hover:border-emerald-500/40 transition-all flex items-center justify-center flex-shrink-0 group/mic shadow-sm" title="Dictar respuesta por voz" type="button">
+<svg class="w-5 h-5 transition-transform group-hover/mic:scale-110" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</div>
+<!-- Bottom helper bar within input module -->
+<div class="pt-2 px-4 pb-1 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400 font-mono">
+<span class="flex items-center space-x-1.5 text-[11px] text-slate-400">
+<span>Enter</span>
+<kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300 font-sans text-[10px]">↵</kbd>
+<span>para continuar a la siguiente pregunta</span>
+</span>
+<span class="text-[11px] text-emerald-400/90 font-medium">Validación automática</span>
+</div>
+</div>
+<!-- Fast-Response Chips (Direct redesign from the screenshot) -->
+<div class="pt-3 space-y-3" data-purpose="quick-reply-options">
+<span class="text-xs font-mono text-slate-400 uppercase tracking-wider block">También puedes responder:</span>
+<div class="flex flex-wrap gap-2.5">
+<button class="px-3.5 py-1.5 rounded-full text-xs font-medium text-slate-300 bg-slate-900/80 border border-slate-800 hover:border-emerald-500/40 hover:bg-slate-800 hover:text-white transition-all" type="button">
+                No lo sé
+              </button>
+<button class="px-3.5 py-1.5 rounded-full text-xs font-medium text-slate-300 bg-slate-900/80 border border-slate-800 hover:border-emerald-500/40 hover:bg-slate-800 hover:text-white transition-all" type="button">
+                No aplica
+              </button>
+<button class="px-3.5 py-1.5 rounded-full text-xs font-medium text-slate-300 bg-slate-900/80 border border-slate-800 hover:border-emerald-500/40 hover:bg-slate-800 hover:text-white transition-all" type="button">
+                Prefiero no responder
+              </button>
+<button class="px-3.5 py-1.5 rounded-full text-xs font-medium text-cyan-300 bg-cyan-950/30 border border-cyan-800/40 hover:border-cyan-400/60 hover:bg-cyan-900/40 transition-all flex items-center space-x-1.5" type="button">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 6v6m0 0v6m0-6h6m-6 0H6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span>Registrar holding o grupo corporativo</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: AI Live Copilot & Process Graph Preview (Col 9-12) -->
+<aside class="lg:col-span-4 w-full space-y-5 lg:pl-4" data-purpose="ai-copilot-sidebar">
+<!-- Live AI Context Reasoning Card -->
+<div class="glass-panel rounded-2xl p-5 border border-slate-800/90 relative overflow-hidden shadow-xl shadow-black/40">
+<div class="absolute -top-10 -right-10 w-28 h-28 bg-emerald-500/10 rounded-full blur-xl"></div>
+<div class="flex items-center space-x-2.5 pb-3 border-b border-slate-800">
+<span class="flex h-2 w-2 relative">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+</span>
+<span class="text-xs font-mono font-bold tracking-wider text-slate-200 uppercase">Copiloto IA en Directo</span>
+</div>
+<div class="mt-4 space-y-3">
+<p class="text-xs text-slate-300 leading-relaxed font-sans">
+              Detectando entidad <span class="text-emerald-400 font-semibold font-mono">"TinSab"</span>. En el siguiente paso determinaremos tu industria para pre-cargar la matriz de automatización correspondiente.
+            </p>
+<div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800 text-[11px] text-slate-400 space-y-1.5">
+<div class="flex items-center justify-between text-slate-400 font-mono">
+<span>Confianza del análisis:</span>
+<span class="text-emerald-400 font-bold">98.4%</span>
+</div>
+<div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+<div class="bg-gradient-to-r from-emerald-500 to-cyan-400 h-1.5 rounded-full w-[98%]"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Roadmap & Node Graph Visualization -->
+<div class="glass-panel rounded-2xl p-5 border border-slate-800/90 space-y-4">
+<div class="flex items-center justify-between">
+<span class="text-xs font-mono font-semibold text-slate-300 uppercase tracking-wider">Mapa de Diagnóstico</span>
+<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Fase 1/4</span>
+</div>
+<!-- Step Progression Node Tree -->
+<div class="space-y-3 pt-1">
+<!-- Node 1: Active -->
+<div class="flex items-center space-x-3 text-xs">
+<div class="w-6 h-6 rounded-lg bg-emerald-500 text-slate-950 font-bold flex items-center justify-center font-mono text-[11px] shadow-[0_0_10px_rgba(16,185,129,0.5)]">
+                1
+              </div>
+<div class="flex-1">
+<p class="font-medium text-white text-xs">Identidad y Modelo de Negocio</p>
+<p class="text-[10px] text-emerald-400 font-mono">Paso activo</p>
+</div>
+</div>
+<!-- Connector line -->
+<div class="ml-3 w-0.5 h-3 bg-slate-800"></div>
+<!-- Node 2: Locked -->
+<div class="flex items-center space-x-3 text-xs opacity-50">
+<div class="w-6 h-6 rounded-lg bg-slate-800 text-slate-400 font-mono flex items-center justify-center text-[11px]">
+                2
+              </div>
+<div class="flex-1">
+<p class="font-medium text-slate-300 text-xs">Cadena de Valor &amp; Flujos Clave</p>
+<p class="text-[10px] text-slate-400 font-mono">4 preguntas pendientes</p>
+</div>
+</div>
+<!-- Connector line -->
+<div class="ml-3 w-0.5 h-3 bg-slate-800"></div>
+<!-- Node 3: Locked -->
+<div class="flex items-center space-x-3 text-xs opacity-40">
+<div class="w-6 h-6 rounded-lg bg-slate-800 text-slate-400 font-mono flex items-center justify-center text-[11px]">
+                3
+              </div>
+<div class="flex-1">
+<p class="font-medium text-slate-300 text-xs">Fricciones y Cuellos de Botella</p>
+<p class="text-[10px] text-slate-400 font-mono">Bloqueado</p>
+</div>
+</div>
+<!-- Connector line -->
+<div class="ml-3 w-0.5 h-3 bg-slate-800"></div>
+<!-- Node 4: Locked -->
+<div class="flex items-center space-x-3 text-xs opacity-30">
+<div class="w-6 h-6 rounded-lg bg-slate-800 text-slate-400 font-mono flex items-center justify-center text-[11px]">
+                4
+              </div>
+<div class="flex-1">
+<p class="font-medium text-slate-300 text-xs">Plan de Automatización ROI</p>
+<p class="text-[10px] text-slate-400 font-mono">Generación de reporte</p>
+</div>
+</div>
+</div>
+</div>
+</aside>
+</div>
+<!-- BEGIN: BottomNavControls -->
+<section class="mt-12 pt-6 border-t border-slate-800/80 flex items-center justify-between" data-purpose="navigation-footer">
+<!-- Previous Button (Inactive on first step) -->
+<button class="inline-flex items-center space-x-2 px-5 py-3 rounded-xl border border-slate-800 text-slate-600 font-medium text-sm cursor-not-allowed transition-colors" disabled="" type="button">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span>Anterior</span>
+</button>
+<!-- Security / Privacy Trust Pill -->
+<div class="hidden md:flex items-center space-x-2 text-xs font-mono text-slate-400">
+<svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span>Cifrado de extremo a extremo • Cumplimiento SOC2</span>
+</div>
+<!-- Continue Primary Action Button -->
+<button class="inline-flex items-center space-x-3 px-8 py-3.5 rounded-xl font-display font-semibold text-sm text-slate-950 bg-gradient-to-r from-emerald-400 via-emerald-300 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 shadow-[0_0_25px_rgba(16,185,129,0.35)] hover:shadow-[0_0_35px_rgba(16,185,129,0.55)] transition-all transform hover:-translate-y-0.5 active:translate-y-0" data-purpose="submit-continue-button" type="button">
+<span>Continuar</span>
+<span class="inline-flex items-center px-1.5 py-0.5 rounded bg-black/20 text-xs font-mono tracking-tighter">↵ Enter</span>
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
+</svg>
+</button>
+</section>
+<!-- END: BottomNavControls -->
+</main>
+<!-- END: MainContentArea -->
+<!-- BEGIN: InteractiveHandlers -->
+<script data-purpose="interaction-script">
+    document.addEventListener('DOMContentLoaded', () => {
+      const companyInput = document.getElementById('companyNameInput');
+      
+      // Auto select or handle enter key
+      companyInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          // Simulated feedback response
+          const button = document.querySelector('[data-purpose="submit-continue-button"]');
+          button.classList.add('ring-2', 'ring-cyan-300', 'scale-95');
+          setTimeout(() => {
+            button.classList.remove('ring-2', 'ring-cyan-300', 'scale-95');
+            alert(`Respuesta registrada: "${companyInput.value}". Avanzando a la Fase 2.`);
+          }, 200);
+        }
+      });
+    });
+  </script>
+<!-- END: InteractiveHandlers -->
+</body></html>
