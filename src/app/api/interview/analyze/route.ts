@@ -12,7 +12,7 @@ const promptVersion = 1;
 const maxAnalysisRuns = 2;
 
 type Reservation =
-  | { kind: "cached"; result: NonNullable<typeof interviewAnalyses.$inferSelect.result> }
+  | { kind: "cached"; result: NonNullable<typeof interviewAnalyses.$inferSelect.result>; followUpResponses: typeof interviewAnalyses.$inferSelect.followUpResponses }
   | { kind: "running" }
   | { kind: "limit" }
   | { kind: "not_found" }
@@ -52,7 +52,7 @@ export async function POST() {
       .limit(1);
 
     if (existing?.answerHash === answerHash && existing.status === "completed" && existing.result) {
-      return { kind: "cached", result: existing.result };
+      return { kind: "cached", result: existing.result, followUpResponses: existing.followUpResponses };
     }
     if (existing?.status === "running") return { kind: "running" };
     if (existing && existing.runCount >= maxAnalysisRuns) return { kind: "limit" };
@@ -85,7 +85,7 @@ export async function POST() {
   if (reservation.kind === "invalid_answers") return json({ error: "invalid_interview_answers" }, 422);
   if (reservation.kind === "running") return json({ error: "analysis_in_progress" }, 409);
   if (reservation.kind === "limit") return json({ error: "analysis_limit_reached" }, 429);
-  if (reservation.kind === "cached") return json({ analysis: reservation.result, cached: true });
+  if (reservation.kind === "cached") return json({ analysis: reservation.result, followUpResponses: reservation.followUpResponses, cached: true });
 
   try {
     const generated = await analyzeInterviewAnswers(reservation.answers);
@@ -120,7 +120,7 @@ export async function POST() {
       eq(interviewAnalyses.status, "running"),
     ));
 
-    return json({ analysis: generated.analysis, cached: false });
+    return json({ analysis: generated.analysis, followUpResponses: [], cached: false });
   } catch (error) {
     await database.update(interviewAnalyses).set({
       status: "failed",

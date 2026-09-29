@@ -108,6 +108,12 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .analysis-item cite { font-style: normal; }
 .analysis-question { margin: 12px 0 0; color: var(--text); font-size: 14px; line-height: 1.55; }
 .analysis-question span { color: var(--emerald); font: 11px "JetBrains Mono", monospace; text-transform: uppercase; }
+.follow-up { margin-top: 14px; border-left: 2px solid rgba(16,185,129,.45); padding-left: 14px; }
+.follow-up-label { display: block; margin: 14px 0 7px; color: var(--muted); font: 11px "JetBrains Mono", monospace; }
+.follow-up textarea { display: block; width: 100%; max-width: 720px; border: 1px solid var(--line); border-radius: 8px; padding: 11px; background: rgba(11,15,23,.62); color: var(--text); line-height: 1.5; resize: vertical; }
+.follow-up-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 10px; }
+.follow-up-actions .secondary-button { padding: 10px 12px; }
+.follow-up-status { margin: 12px 0 0; color: var(--emerald); font: 11px/1.5 "JetBrains Mono", monospace; }
 .success-mark { display: grid; place-items: center; width: 64px; height: 64px; margin-bottom: 32px; border: 1px solid rgba(16,185,129,.45); border-radius: 16px; background: rgba(16,185,129,.12); color: var(--emerald); font: 30px "JetBrains Mono", monospace; box-shadow: 0 0 24px rgba(16,185,129,.18); }
 .centered-shell h1 { max-width: 700px; }
 .centered-shell .hero-lead { margin-bottom: 30px; }

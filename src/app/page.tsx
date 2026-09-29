@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, useEffect, useState } from "react";
-import type { InterviewAnalysis } from "@/lib/ai/interview-analysis";
+import type { FollowUpResponse, InterviewAnalysis } from "@/lib/ai/interview-analysis";
 
 type Answer = string;
 
@@ -118,10 +118,6 @@ const specialAnswers = ["No lo sé", "No aplica", "Prefiero no responder"];
 
 const initialAnswers: Record<string, Answer> = {};
 
-function displayAnswer(answer: Answer | undefined) {
-  return answer?.trim() || "Sin respuesta";
-}
-
 function questionLabel(field: string) {
   return questions.find((question) => question.id === field)?.title ?? field;
 }
@@ -130,8 +126,13 @@ function confidenceLabel(confidence: "low" | "medium" | "high") {
   return { low: "baja", medium: "media", high: "alta" }[confidence];
 }
 
-function issueCategoryLabel(category: "missing" | "ambiguous" | "inconsistent") {
-  return { missing: "dato faltante", ambiguous: "respuesta ambigua", inconsistent: "posible contradicción" }[category];
+function issueCategoryLabel(category: "missing" | "ambiguous" | "inconsistent" | "low_confidence") {
+  return {
+    missing: "dato faltante",
+    ambiguous: "respuesta ambigua",
+    inconsistent: "posible contradicción",
+    low_confidence: "confianza baja",
+  }[category];
 }
 
 function LogoMark() {
@@ -167,6 +168,10 @@ export default function Home() {
   const [analysisState, setAnalysisState] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [analysisConsent, setAnalysisConsent] = useState(false);
   const [analysisError, setAnalysisError] = useState("");
+  const [followUpResponses, setFollowUpResponses] = useState<FollowUpResponse[]>([]);
+  const [followUpDrafts, setFollowUpDrafts] = useState<Record<number, string>>({});
+  const [savingFollowUp, setSavingFollowUp] = useState<number | null>(null);
+  const [followUpError, setFollowUpError] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -263,10 +268,38 @@ export default function Home() {
       }
 
       setAnalysis(result.analysis);
+      setFollowUpResponses(result.followUpResponses ?? []);
+      setFollowUpDrafts({});
       setAnalysisState("ready");
     } catch (error) {
       setAnalysisError(error instanceof Error ? error.message : "No se pudo analizar la entrevista.");
       setAnalysisState("error");
+    }
+  }
+
+  async function saveFollowUp(issueIndex: number, skipped: boolean) {
+    const answer = followUpDrafts[issueIndex]?.trim() ?? "";
+    if (!skipped && !answer) {
+      setFollowUpError("Escribe una aclaración o indica que prefieres no contestar.");
+      return;
+    }
+
+    setSavingFollowUp(issueIndex);
+    setFollowUpError("");
+    try {
+      const response = await fetch("/api/interview/analyze", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ issueIndex, answer: skipped ? null : answer, skipped }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error("No se pudo guardar la aclaración.");
+
+      setFollowUpResponses(result.followUpResponses);
+    } catch (error) {
+      setFollowUpError(error instanceof Error ? error.message : "No se pudo guardar la aclaración.");
+    } finally {
+      setSavingFollowUp(null);
     }
   }
 
@@ -337,30 +370,31 @@ export default function Home() {
           {analysisState === "error" && <p className="analysis-message" role="alert">{analysisError}</p>}
           {analysisState === "loading" && <p className="analysis-message" role="status">Revisando las respuestas guardadas…</p>}
         </section>
-        {analysis && <section className="analysis-results" aria-label="Resultado del análisis" aria-live="polite">
-          <h2>Hechos que encontró</h2>
-          {analysis.facts.length === 0 && <p>No se extrajeron hechos verificables adicionales.</p>}
-          {analysis.facts.map((fact, index) => <article className="analysis-item" key={`${fact.field}-${index}`}>
-            <span className="summary-label">{questionLabel(fact.field)} · confianza estimada {confidenceLabel(fact.confidence)}</span>
-            <strong>{fact.value}</strong>
-            <blockquote>“{fact.evidence}” <cite>· {questionLabel(fact.sourceField)}</cite></blockquote>
-          </article>)}
-          <h2>Datos por aclarar</h2>
-          {analysis.issues.length === 0 && <p>No se detectaron ambigüedades ni contradicciones claras.</p>}
+        {analysis && <section className="analysis-results" aria-label="Hallazgos que requieren revisión" aria-live="polite">
+          <h2>Hallazgos para revisar</h2>
+          {analysis.issues.length === 0 && <p>No se detectaron datos que requieran aclaración.</p>}
           {analysis.issues.map((issue, index) => <article className="analysis-item" key={`${issue.category}-${index}`}>
-            <span className="summary-label">{issueCategoryLabel(issue.category)} · {issue.fields.map(questionLabel).join(", ")}</span>
+            <span className="summary-label">{issueCategoryLabel(issue.category)} · {issue.confidence ? `confianza ${confidenceLabel(issue.confidence)} · ` : ""}{issue.fields.map(questionLabel).join(", ")}</span>
             <strong>{issue.explanation}</strong>
             {issue.evidence.map((evidence, evidenceIndex) => <blockquote key={`${evidence.sourceField}-${evidenceIndex}`}>
               “{evidence.quote}” <cite>· {questionLabel(evidence.sourceField)}</cite>
             </blockquote>)}
-            {issue.followUpQuestion && <p className="analysis-question"><span>Pregunta sugerida:</span> {issue.followUpQuestion}</p>}
+            {issue.followUpQuestion && <div className="follow-up">
+              <p className="analysis-question"><span>Pregunta de aclaración:</span> {issue.followUpQuestion}</p>
+              {followUpResponses.find((response) => response.issueIndex === index) ? <p className="follow-up-status" role="status">{followUpResponses.find((response) => response.issueIndex === index)?.skipped ? "Prefieres no contestar esta pregunta." : "Aclaración guardada."}</p> : <>
+                <label className="follow-up-label" htmlFor={`follow-up-${index}`}>Tu respuesta (opcional)</label>
+                <textarea id={`follow-up-${index}`} value={followUpDrafts[index] ?? ""} onChange={(event) => setFollowUpDrafts((previous) => ({ ...previous, [index]: event.target.value }))} rows={3} />
+                <div className="follow-up-actions">
+                  <button className="secondary-button" onClick={() => saveFollowUp(index, false)} disabled={savingFollowUp === index}>{savingFollowUp === index ? "Guardando…" : "Guardar aclaración"}</button>
+                  <button className="text-button" onClick={() => saveFollowUp(index, true)} disabled={savingFollowUp === index}>Prefiero no contestar</button>
+                </div>
+              </>}
+            </div>}
           </article>)}
+          {followUpError && <p className="analysis-message" role="alert">{followUpError}</p>}
           <p className="analysis-caution">Las citas indican de dónde salió cada hallazgo. Confirma o corrige las respuestas antes de continuar.</p>
         </section>}
-        <section className="summary-card" aria-label="Resumen de respuestas">
-          {questions.map((question, index) => <div className="summary-row" key={question.id}><div><span className="summary-label">{question.title}</span><strong>{displayAnswer(answers[question.id])}</strong></div><button className="text-button" onClick={() => { setAnalysis(null); setAnalysisState("idle"); setQuestionIndex(index); setScreen("questions"); }}>Editar</button></div>)}
-        </section>
-        <div className="review-actions"><button className="secondary-button" onClick={() => { setQuestionIndex(questions.length - 1); setScreen("questions"); }}>Volver</button><button className="primary-button" onClick={() => setScreen("done")}>Confirmar resumen <span aria-hidden="true">→</span></button></div>
+        <div className="review-actions"><button className="secondary-button" onClick={() => { setAnalysis(null); setAnalysisState("idle"); setQuestionIndex(questions.length - 1); setScreen("questions"); }}>Editar respuestas</button><button className="primary-button" onClick={() => setScreen("done")}>Confirmar resumen <span aria-hidden="true">→</span></button></div>
       </main>
     );
   }
