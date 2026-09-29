@@ -4,23 +4,25 @@
 
 - Rama observada: `develop`.
 - El repositorio contiene una aplicación Next.js con TypeScript y una interfaz local de entrevista escrita.
-- La pantalla implementa bienvenida, preguntas secuenciales, progreso, revisión editable y confirmación local.
+- La pantalla implementa bienvenida, 12 preguntas secuenciales, progreso, revisión editable y confirmación local.
 - La entrevista cubre datos básicos de empresa, un proceso, frecuencia, volumen, tiempo, herramientas, tareas manuales, problemas y decisiones humanas.
-- El estado de las respuestas vive en React durante la sesión; no hay persistencia tras recargar.
-- La confirmación termina en una pantalla de demo. No calcula un diagnóstico ni envía información.
+- PostgreSQL guarda empresa, entrevista, proceso y una sesión anónima; las respuestas se validan en el servidor.
+- La interfaz restaura la entrevista asociada a una cookie `HttpOnly` de 30 días; sin base disponible, el borrador es temporal y se indica como tal.
+- La confirmación sigue siendo un cierre de demo. No calcula un diagnóstico ni envía correo.
 
-## Fase activa
+## Estado de fases
 
-Fase 1: completar y validar el flujo escrito y la experiencia base. El código existente ya ofrece una primera versión navegable de ese flujo.
+Fase 1 y Fase 2 completas y verificadas. La migración se aplicó a Supabase y el recorrido POST/PUT/GET guardó y recuperó un borrador; los datos sintéticos de prueba se eliminaron.
 
 ## Próximo foco
 
-Comparar la demo con los criterios de salida de Fase 1, completar los estados y detalles faltantes del recorrido y verificar el flujo en móvil y escritorio. No incorporar servicios externos ni funcionalidades de fases posteriores sin actualizar el alcance.
+El siguiente foco es definir el alcance y los criterios de Fase 3 antes de integrar extracción con IA.
 
 ## Restricciones vigentes
 
 - Un único proceso por entrevista.
-- Sin voz, IA, correo, autenticación ni integraciones reales.
+- Sin voz, IA, correo, cuentas de usuario ni integraciones de negocio.
+- La sesión anónima usa la cookie privada como credencial; no permite recuperar la entrevista desde otro dispositivo.
 - No calcular costes o ahorros sin datos confirmados y reglas explícitas.
 - Conservar los cambios existentes y trabajar en pasos pequeños verificables.
 

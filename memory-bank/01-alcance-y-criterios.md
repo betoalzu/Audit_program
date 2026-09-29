@@ -13,9 +13,11 @@ Persona responsable de operaciones, administración o dirección de una pequeña
 5. Responde preguntas sobre frecuencia, volumen, duración, pasos, herramientas, errores y excepciones.
 6. Revisa un resumen estructurado y editable.
 7. Confirma el resumen.
-8. Consulta un diagnóstico basado en reglas.
+8. Consulta el cierre explícito de la demo; en esta fase no se calcula un diagnóstico.
 
-## Datos mínimos
+## Datos mínimos del esquema completo
+
+Estos campos describen el objetivo del modelo de datos y se incorporarán por fases; la demo de Fase 1 no los recopila todos.
 
 - nombre de la empresa;
 - sector y ubicación;
@@ -62,4 +64,4 @@ La demo puede mantener estos estados localmente. La persistencia remota se añad
 - Se puede avanzar, volver atrás y revisar el progreso.
 - Las respuestas desconocidas o no aplicables no se fuerzan como datos reales.
 - El resumen es editable antes de confirmar.
-- El diagnóstico no inventa valores ni afirma envíos, integraciones o ahorros reales.
+- La pantalla de cierre no afirma que se hayan calculado ahorros, enviado informes o conectado servicios.

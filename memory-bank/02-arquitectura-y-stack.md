@@ -25,6 +25,9 @@
 - Drizzle ORM y Drizzle Kit.
 - Route Handlers o Server Actions de Next.js.
 - Validación Zod en el servidor.
+- Acceso anónimo con token aleatorio en cookie `HttpOnly`, `SameSite=Strict`; la base almacena únicamente su hash.
+- No hay cuentas ni recuperación entre dispositivos. La cookie funciona como credencial de acceso y debe tratarse como privada.
+- Si la persistencia falla, la interfaz lo indica y no afirma que guardó los datos.
 
 ### Servicios posteriores
 

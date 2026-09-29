@@ -14,23 +14,29 @@
 - `npm run build`: compilación de producción.
 - `npm start`: servidor de producción.
 - `npm run lint`: ESLint.
+- `npm test`: pruebas Vitest.
+- `npm run db:generate`: genera migraciones Drizzle.
+- `npm run db:migrate`: aplica migraciones PostgreSQL. Requiere `DATABASE_URL`.
+- Drizzle carga `.env` mediante `dotenv/config`; Next.js también puede leer `.env.local`.
 
-El `package.json` no declara actualmente comandos de pruebas ni dependencias de pruebas.
+La aplicación también requiere PostgreSQL para persistencia real; consulta `README.md` para el arranque local.
 
 ## Implementación observada
 
 - Interfaz principal en `src/app/page.tsx`; estilos globales en `src/app/globals.css`.
 - Metadatos y configuración del idioma español en `src/app/layout.tsx`.
-- La entrevista y las respuestas están definidas en la página cliente y se conservan en estado React mientras la página permanece cargada.
-- No se observa backend de dominio, base de datos, esquema de validación ni proveedor externo integrado.
+- La interfaz de entrevista está en `src/app/page.tsx`; los borradores se validan con Zod y se guardan mediante `src/app/api/interview/route.ts`.
+- PostgreSQL se configura con `DATABASE_URL`; el esquema Drizzle y sus migraciones están en `src/lib/db/` y `drizzle/`.
+- La sesión es anónima y usa una cookie privada de 30 días. Sin base disponible, la app indica que las respuestas son temporales.
+- PostgreSQL de Supabase está conectado y la migración inicial está aplicada; se validó el ciclo HTTP de creación, guardado y recuperación.
 
 ## Stack previsto, aún no integrado
 
-La documentación propone PostgreSQL y Drizzle para persistencia en Fase 2, Zod para validación y Vitest/Playwright para pruebas. React Hook Form y shadcn/ui también aparecen como elecciones posibles en la arquitectura inicial. No asumir que estas dependencias están instaladas; comprobar `package.json` antes de usarlas.
+Vitest verifica validación y completitud. React Hook Form y shadcn/ui siguen como opciones posibles, no forman parte de esta fase.
 
 ## Restricciones técnicas
 
-- La demo debe funcionar sin secretos ni servicios externos.
+- El modo temporal debe funcionar sin secretos ni servicios externos.
 - Mantener cálculos en lógica determinista y probarlos cuando se incorporen.
 - Configurar secretos mediante variables de entorno solo al integrar proveedores.
 - Revisar compatibilidad y costes de proveedores antes de seleccionarlos.
