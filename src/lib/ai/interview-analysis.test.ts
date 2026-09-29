@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analysisHasSourceEvidence, interviewAnalysisSchema } from "./interview-analysis";
+import { analysisHasSourceEvidence, hashInterviewAnswers, interviewAnalysisSchema } from "./interview-analysis";
 
 const answers = {
   processName: "Recepción de pedidos",
@@ -22,11 +22,17 @@ const validAnalysis = {
       sourceField: "manualStep",
       quote: "Copiamos los pedidos del correo al ERP",
     }],
+    confidence: null,
     followUpQuestion: "¿Cuánto tiempo suele tomar copiar un pedido?",
   }],
 } as const;
 
 describe("structured interview analysis", () => {
+  it("hashes the same answers regardless of property order", () => {
+    expect(hashInterviewAnswers({ processName: "Recepción", manualStep: "Copiar pedidos" }))
+      .toBe(hashInterviewAnswers({ manualStep: "Copiar pedidos", processName: "Recepción" }));
+  });
+
   it("accepts findings with known interview fields", () => {
     expect(interviewAnalysisSchema.safeParse(validAnalysis).success).toBe(true);
   });
@@ -57,6 +63,7 @@ describe("structured interview analysis", () => {
         fields: ["processGoal"],
         explanation: "No se indicó el objetivo del proceso.",
         evidence: [],
+        confidence: null,
         followUpQuestion: "¿Qué resultado debería producir el proceso?",
       }],
     });
@@ -74,5 +81,40 @@ describe("structured interview analysis", () => {
       facts: [{ ...validAnalysis.facts[0], evidence: "We automate every order" }],
     });
     expect(analysisHasSourceEvidence(fabricated, answers)).toBe(false);
+  });
+
+  it("accepts a low-confidence finding with a clarification question", () => {
+    const lowConfidenceAnalysis = interviewAnalysisSchema.safeParse({
+      facts: [],
+      issues: [{
+        category: "low_confidence",
+        fields: ["manualStep"],
+        explanation: "La descripción no concreta cómo se valida cada pedido.",
+        evidence: [{
+          sourceField: "manualStep",
+          quote: "Copiamos los pedidos del correo al ERP",
+        }],
+        confidence: "low",
+        followUpQuestion: "¿Qué comprobaciones hacéis antes de registrar cada pedido en el ERP?",
+      }],
+    });
+
+    expect(lowConfidenceAnalysis.success).toBe(true);
+  });
+
+  it("allows a relevant finding without a follow-up question", () => {
+    const withoutFollowUp = interviewAnalysisSchema.safeParse({
+      facts: [],
+      issues: [{
+        category: "inconsistent",
+        fields: ["cases"],
+        explanation: "El volumen indicado no coincide con la frecuencia descrita.",
+        evidence: [{ sourceField: "processName", quote: "Recepción de pedidos" }],
+        confidence: null,
+        followUpQuestion: null,
+      }],
+    });
+
+    expect(withoutFollowUp.success).toBe(true);
   });
 });

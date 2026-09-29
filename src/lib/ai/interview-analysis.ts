@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { z } from "zod";
 import { specialAnswers, type InterviewAnswers } from "../interview-schema";
 
@@ -31,15 +32,23 @@ export const interviewAnalysisSchema = z.object({
     confidence: z.enum(["low", "medium", "high"]),
   }).strict()).max(12),
   issues: z.array(z.object({
-    category: z.enum(["missing", "ambiguous", "inconsistent"]),
+    category: z.enum(["missing", "ambiguous", "inconsistent", "low_confidence"]),
     fields: z.array(fieldId).min(1).max(3),
     explanation: z.string().min(1).max(300),
     evidence: z.array(evidenceSchema).max(3),
+    confidence: z.enum(["low", "medium", "high"]).nullable(),
     followUpQuestion: z.string().max(240).nullable(),
   }).strict()).max(5),
 }).strict();
 
 export type InterviewAnalysis = z.infer<typeof interviewAnalysisSchema>;
+
+export function hashInterviewAnswers(answers: InterviewAnswers) {
+  const stableEntries = Object.entries(answers).sort(([left], [right]) =>
+    left < right ? -1 : left > right ? 1 : 0,
+  );
+  return createHash("sha256").update(JSON.stringify(stableEntries)).digest("hex");
+}
 
 export function analysisHasSourceEvidence(analysis: InterviewAnalysis, answers: InterviewAnswers) {
   function isUnknownAnswer(field: keyof InterviewAnswers) {
