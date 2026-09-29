@@ -1,5 +1,6 @@
 import { relations, sql } from "drizzle-orm";
 import { index, integer, jsonb, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import type { InterviewAnalysis } from "../ai/interview-analysis";
 import type { InterviewAnswers } from "../interview-schema";
 
 export const interviewStatus = pgEnum("interview_status", [
@@ -13,6 +14,7 @@ export const interviewStatus = pgEnum("interview_status", [
 ]);
 
 export const interviewScreen = pgEnum("interview_screen", ["welcome", "questions", "review", "done"]);
+export const interviewAnalysisStatus = pgEnum("interview_analysis_status", ["running", "completed", "failed"]);
 
 export const companies = pgTable("companies", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -61,6 +63,21 @@ export const interviewSessions = pgTable("interview_sessions", {
   uniqueIndex("interview_sessions_token_hash_idx").on(table.tokenHash),
   index("interview_sessions_expiry_idx").on(table.expiresAt),
 ]);
+
+export const interviewAnalyses = pgTable("interview_analyses", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  interviewId: uuid("interview_id").notNull().unique().references(() => interviews.id, { onDelete: "cascade" }),
+  answerHash: text("answer_hash").notNull(),
+  status: interviewAnalysisStatus("status").notNull().default("running"),
+  runCount: integer("run_count").notNull().default(1),
+  model: text("model").notNull(),
+  promptVersion: integer("prompt_version").notNull(),
+  result: jsonb("result").$type<InterviewAnalysis>(),
+  inputTokens: integer("input_tokens"),
+  outputTokens: integer("output_tokens"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 export const companyRelations = relations(companies, ({ many }) => ({ interviews: many(interviews) }));
 export const interviewRelations = relations(interviews, ({ one }) => ({
