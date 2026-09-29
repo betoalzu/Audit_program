@@ -7,7 +7,7 @@
 | 0. Definición | Completa | Alcance, decisiones, arquitectura y plan documentados en los archivos numerados existentes. |
 | 1. Entrevista escrita | Completa | Recorrido verificado en navegador en escritorio y móvil: 12 preguntas, navegación, respuestas especiales, resumen editable y confirmación. |
 | 2. Esquema y persistencia | Completa | Migración aplicada en Supabase; el endpoint creó, guardó y recuperó una entrevista de prueba. Los datos sintéticos se eliminaron. |
-| 3. Extracción y aclaraciones | En curso | Gemini 3.1 Flash-Lite detrás de ruta de servidor; salida Zod con procedencia/citas, preguntas sugeridas, consentimiento, caché y límite de dos llamadas por entrevista. Falta una prueba real con clave de pago. |
+| 3. Extracción y aclaraciones | Completa | Gemini 3.1 Flash-Lite revisa respuestas con consentimiento, citas verificables, caché, límite de dos llamadas y preguntas de aclaración opcionales persistentes. Flujo probado con una revisión real. |
 | 4. Diagnóstico e informe | Pendiente | No hay cálculos de diagnóstico ni generación de PDF. |
 | 5. Correo y operación | Pendiente | No hay envío de correo ni panel administrativo. |
 | 6. Voz opcional | Pendiente | No hay captura ni transcripción de voz. |
@@ -16,7 +16,7 @@
 ## Trabajo disponible
 
 - La demo ofrece 12 preguntas sobre empresa, un proceso, frecuencia, volumen, duración, herramientas, tareas manuales, problemas y decisiones humanas.
-- Se pueden recorrer las preguntas, volver atrás, usar respuestas especiales y editar respuestas desde el resumen.
+- Se pueden recorrer las preguntas, volver atrás, usar respuestas especiales y editar respuestas desde la revisión.
 - La confirmación solo muestra el final de la demo; no calcula un diagnóstico ni envía datos.
 - El acceso persistente queda vinculado al navegador mediante una cookie privada; no hay cuentas ni recuperación entre dispositivos.
 - Las respuestas se guardan en PostgreSQL si está configurado; si no, el modo temporal lo comunica explícitamente.
@@ -41,13 +41,13 @@
 
 ## Verificación de Fase 3
 
-- `npm test`: 8 pruebas correctas, incluyendo campos conocidos y rechazo de evidencia inventada.
+- `npm test`: 10 pruebas correctas del análisis, incluyendo campos conocidos, rechazo de evidencia inventada, baja confianza, aclaración, omisión y compatibilidad con análisis previos.
 - `npm run lint`, `npx tsc --noEmit` y `npm run build`: correctos.
-- `npm run db:migrate`: aplicada la tabla `interview_analyses` en Supabase.
-- Prueba HTTP sin clave: la ruta devuelve `ai_not_configured` sin contactar al proveedor; los registros sintéticos se eliminaron.
+- `npm run db:migrate`: aplicadas las migraciones de `interview_analyses` y de respuestas de seguimiento en Supabase.
+- Navegador: una revisión real generó hallazgos con citas y preguntas de aclaración; una respuesta de seguimiento se guardó correctamente y la omisión está disponible sin bloquear el flujo.
+- La interfaz muestra solo hallazgos que requieren atención; los análisis previos sin confianza de incidencia continúan aceptando aclaraciones.
 - `npm audit --omit=dev`: cero vulnerabilidades.
-- No hay `GOOGLE_GENERATIVE_AI_API_KEY` configurada; falta validar salida y calidad con el proveedor pagado.
 
 ## Próximo paso
 
-Configurar una clave de pago de Gemini en `.env` y probar la revisión con casos representativos y consentimiento.
+Iniciar la Fase 4: definir cálculos deterministas, reglas de recomendación y el alcance del informe diagnóstico.

@@ -12,11 +12,11 @@
 
 ## Estado de fases
 
-Fase 1 y Fase 2 completas y verificadas. Fase 3 en curso: Gemini está integrado detrás de la ruta de servidor con salida Zod, citas verificables, consentimiento y límite de uso. Falta configurar una clave de pago y probar una respuesta real del modelo.
+Fases 1, 2 y 3 completas y verificadas. La Fase 3 integra Gemini detrás de una ruta de servidor con salida Zod, citas verificables, consentimiento, caché, límite de uso y aclaraciones opcionales persistentes. Se validó una revisión real y el guardado de una aclaración.
 
 ## Próximo foco
 
-Configurar `GOOGLE_GENERATIVE_AI_API_KEY` con una cuenta de Gemini API de pago y evaluar la extracción con ejemplos representativos; no compartir ni versionar la clave.
+Iniciar la Fase 4: definir cálculos deterministas, reglas de recomendación y el alcance del informe diagnóstico.
 
 ## Restricciones vigentes
 
