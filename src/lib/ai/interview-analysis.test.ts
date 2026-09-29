@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analysisHasSourceEvidence, hashInterviewAnswers, interviewAnalysisSchema } from "./interview-analysis";
+import { analysisHasSourceEvidence, followUpResponseSchema, hashInterviewAnswers, interviewAnalysisSchema } from "./interview-analysis";
 
 const answers = {
   processName: "Recepción de pedidos",
@@ -116,5 +116,23 @@ describe("structured interview analysis", () => {
     });
 
     expect(withoutFollowUp.success).toBe(true);
+  });
+
+  it("accepts either a clarification response or an explicit omission", () => {
+    expect(followUpResponseSchema.safeParse({
+      issueIndex: 0,
+      answer: "Comprobamos el precio y la referencia antes de registrarlo.",
+      skipped: false,
+    }).success).toBe(true);
+    expect(followUpResponseSchema.safeParse({
+      issueIndex: 0,
+      answer: null,
+      skipped: true,
+    }).success).toBe(true);
+    expect(followUpResponseSchema.safeParse({
+      issueIndex: 0,
+      answer: null,
+      skipped: false,
+    }).success).toBe(false);
   });
 });

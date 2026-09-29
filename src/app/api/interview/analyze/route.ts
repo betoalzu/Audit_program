@@ -1,8 +1,8 @@
-import { createHash } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import { getDatabase } from "@/lib/db";
 import { interviewAnalyses, interviews } from "@/lib/db/schema";
 import { analyzeInterviewAnswers, InterviewAnalysisConfigurationError, InterviewAnalysisEvidenceError } from "@/lib/ai/analyze-interview";
+import { followUpResponseSchema, hashInterviewAnswers, interviewAnalysisSchema } from "@/lib/ai/interview-analysis";
 import { interviewAnswersSchema } from "@/lib/interview-schema";
 import { getCurrentInterviewSession } from "@/lib/interview-session";
 
@@ -26,10 +26,6 @@ function json(data: unknown, status = 200) {
   });
 }
 
-function hashAnswers(answers: unknown) {
-  return createHash("sha256").update(JSON.stringify(answers)).digest("hex");
-}
-
 export async function POST() {
   const session = await getCurrentInterviewSession().catch(() => null);
   if (!session) return json({ error: "interview_not_found" }, 404);
@@ -48,7 +44,7 @@ export async function POST() {
     if (!parsedAnswers.success) return { kind: "invalid_answers" };
 
     const answers = parsedAnswers.data;
-    const answerHash = hashAnswers(answers);
+    const answerHash = hashInterviewAnswers(answers);
     const [existing] = await transaction
       .select()
       .from(interviewAnalyses)
@@ -99,7 +95,7 @@ export async function POST() {
       .where(eq(interviews.id, session.interviewId))
       .limit(1);
 
-    if (!currentInterview || hashAnswers(currentInterview.answers) !== reservation.answerHash) {
+    if (!currentInterview || hashInterviewAnswers(currentInterview.answers) !== reservation.answerHash) {
       await database.update(interviewAnalyses).set({
         status: "failed",
         updatedAt: new Date(),
@@ -142,5 +138,49 @@ export async function POST() {
       return json({ error: "invalid_ai_analysis" }, 502);
     }
     return json({ error: "ai_service_unavailable" }, 502);
+  }
+}
+
+export async function PATCH(request: Request) {
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "invalid_json" }, 400);
+  }
+
+  const response = followUpResponseSchema.safeParse(body);
+  if (!response.success) return json({ error: "invalid_follow_up_response" }, 422);
+
+  try {
+    const session = await getCurrentInterviewSession();
+    if (!session) return json({ error: "interview_not_found" }, 404);
+
+    const database = getDatabase();
+    const [analysis] = await database
+      .select({ result: interviewAnalyses.result, followUpResponses: interviewAnalyses.followUpResponses })
+      .from(interviewAnalyses)
+      .where(and(
+        eq(interviewAnalyses.interviewId, session.interviewId),
+        eq(interviewAnalyses.status, "completed"),
+      ))
+      .limit(1);
+
+    const parsedAnalysis = analysis?.result && interviewAnalysisSchema.safeParse(analysis.result);
+    const issue = parsedAnalysis?.success ? parsedAnalysis.data.issues[response.data.issueIndex] : null;
+    if (!issue?.followUpQuestion) return json({ error: "follow_up_not_found" }, 404);
+
+    const followUpResponses = [
+      ...(analysis.followUpResponses ?? []).filter((item) => item.issueIndex !== response.data.issueIndex),
+      response.data,
+    ];
+    await database.update(interviewAnalyses).set({
+      followUpResponses,
+      updatedAt: new Date(),
+    }).where(eq(interviewAnalyses.interviewId, session.interviewId));
+
+    return json({ followUpResponses });
+  } catch {
+    return json({ error: "storage_unavailable" }, 503);
   }
 }

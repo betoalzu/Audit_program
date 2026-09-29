@@ -1,0 +1,1 @@
+ALTER TABLE "interview_analyses" ADD COLUMN "follow_up_responses" jsonb DEFAULT '[]'::jsonb NOT NULL;

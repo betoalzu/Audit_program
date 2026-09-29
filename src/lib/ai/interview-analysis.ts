@@ -43,6 +43,17 @@ export const interviewAnalysisSchema = z.object({
 
 export type InterviewAnalysis = z.infer<typeof interviewAnalysisSchema>;
 
+export const followUpResponseSchema = z.object({
+  issueIndex: z.number().int().min(0).max(4),
+  answer: z.string().trim().min(1).max(4000).nullable(),
+  skipped: z.boolean(),
+}).strict().refine(
+  (response) => response.skipped === (response.answer === null),
+  "La aclaración debe ser una respuesta o una omisión.",
+);
+
+export type FollowUpResponse = z.infer<typeof followUpResponseSchema>;
+
 export function hashInterviewAnswers(answers: InterviewAnswers) {
   const stableEntries = Object.entries(answers).sort(([left], [right]) =>
     left < right ? -1 : left > right ? 1 : 0,
