@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
 
 type Answer = string;
 
@@ -148,12 +148,72 @@ export default function Home() {
   const [screen, setScreen] = useState<"welcome" | "questions" | "review" | "done">("welcome");
   const [questionIndex, setQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, Answer>>(initialAnswers);
+  const [hasInterview, setHasInterview] = useState(false);
+  const [storageState, setStorageState] = useState<"loading" | "saved" | "saving" | "temporary" | "error">("loading");
+
+  useEffect(() => {
+    let active = true;
+
+    fetch("/api/interview", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Interview storage is unavailable");
+        return response.json();
+      })
+      .then((result) => {
+        if (!active) return;
+        if (result.interview) {
+          setAnswers(result.interview.answers);
+          setQuestionIndex(result.interview.currentStep);
+          setScreen(result.interview.currentScreen);
+          setHasInterview(true);
+        }
+        setStorageState("saved");
+      })
+      .catch(() => {
+        if (active) setStorageState("temporary");
+      });
+
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!hasInterview) return;
+
+    const timeout = window.setTimeout(() => {
+      setStorageState("saving");
+      fetch("/api/interview", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answers, currentStep: questionIndex, currentScreen: screen }),
+      })
+        .then((response) => {
+          if (!response.ok) throw new Error("Interview save failed");
+          setStorageState("saved");
+        })
+        .catch(() => setStorageState("error"));
+    }, 350);
+
+    return () => window.clearTimeout(timeout);
+  }, [answers, hasInterview, questionIndex, screen]);
 
   const currentQuestion = questions[questionIndex];
   const currentAnswer = currentQuestion ? answers[currentQuestion.id] || "" : "";
+  const currentInputValue = currentQuestion?.type === "number" && specialAnswers.includes(currentAnswer)
+    ? ""
+    : currentAnswer;
   const progress = Math.round(((questionIndex + 1) / questions.length) * 100);
 
-  function beginInterview() {
+  async function beginInterview() {
+    if (!hasInterview && storageState !== "temporary") {
+      try {
+        const response = await fetch("/api/interview", { method: "POST" });
+        if (!response.ok) throw new Error("Interview storage is unavailable");
+        setHasInterview(true);
+        setStorageState("saved");
+      } catch {
+        setStorageState("temporary");
+      }
+    }
     setScreen("questions");
     setQuestionIndex(0);
   }
@@ -187,15 +247,17 @@ export default function Home() {
       <main className="shell">
         <header className="topbar">
           <Brand />
-          <span className="status"><span className="status-dot" /> Demo local</span>
+          <span className="status"><span className="status-dot" /> {storageState === "saved" && hasInterview ? "Guardado" : storageState === "saved" ? "Preparado" : storageState === "loading" ? "Conectando" : "Temporal"}</span>
         </header>
         <section className="hero-grid">
           <div className="hero-copy">
             <p className="kicker">Diagnóstico operativo · versión inicial</p>
             <h1>Entiende qué parte de tu trabajo podría ser más sencilla.</h1>
             <p className="hero-lead">Una entrevista breve para detectar tareas repetitivas en un proceso real de tu empresa. Tú revisas los datos antes de recibir cualquier conclusión.</p>
-            <button className="primary-button" onClick={beginInterview}>Comenzar entrevista <span aria-hidden="true">→</span></button>
-            <div className="trust-row"><span>Sin micrófono</span><span>Sin datos sensibles</span><span>Revisable</span></div>
+            <p className="demo-note">Las respuestas se guardan en PostgreSQL y se vinculan a este navegador, sin crear una cuenta. No incluyas información personal ni confidencial.</p>
+            <button className="primary-button" onClick={beginInterview} disabled={storageState === "loading"}>Comenzar entrevista <span aria-hidden="true">→</span></button>
+            {storageState === "temporary" && <p className="demo-note" role="status">No se pudo conectar con el almacenamiento. Las respuestas de esta sesión serán temporales.</p>}
+            <div className="trust-row"><span>Sin micrófono</span><span>Sin datos personales</span><span>Revisable</span></div>
           </div>
           <aside className="intro-panel" aria-label="Información de la entrevista">
             <div className="panel-topline"><span className="panel-number">01</span><span>Antes de empezar</span></div>
@@ -204,7 +266,7 @@ export default function Home() {
             <dl className="fact-list"><div><dt>Duración</dt><dd>5–8 min</dd></div><div><dt>Alcance</dt><dd>1 proceso</dd></div><div><dt>Resultado</dt><dd>Resumen revisable</dd></div></dl>
           </aside>
         </section>
-        <footer className="page-footer"><span>Primero texto. La voz será siempre opcional.</span><span>Fase 1 · Demo sin servicios externos</span></footer>
+        <footer className="page-footer"><span>Primero texto. La voz será siempre opcional.</span><span>Fase 2 · Guardado privado por navegador</span></footer>
       </main>
     );
   }
@@ -213,7 +275,7 @@ export default function Home() {
     return (
       <main className="shell narrow-shell">
         <header className="topbar"><Brand /><span className="status"><span className="status-dot" /> Revisión</span></header>
-        <section className="review-header"><p className="kicker">Último paso</p><h1>Revisa lo que hemos entendido.</h1><p>Estos datos son un borrador editable. En la siguiente fase se usarán para calcular el diagnóstico.</p></section>
+        <section className="review-header"><p className="kicker">Último paso</p><h1>Revisa lo que hemos entendido.</h1><p>Estos datos son un borrador editable. El diagnóstico se definirá en fases posteriores, con datos validados.</p></section>
         <section className="summary-card" aria-label="Resumen de respuestas">
           {questions.map((question, index) => <div className="summary-row" key={question.id}><div><span className="summary-label">{question.title}</span><strong>{displayAnswer(answers[question.id])}</strong></div><button className="text-button" onClick={() => { setQuestionIndex(index); setScreen("questions"); }}>Editar</button></div>)}
         </section>
@@ -224,24 +286,24 @@ export default function Home() {
 
   if (screen === "done") {
     return (
-      <main className="shell centered-shell"><div className="success-mark">✓</div><p className="kicker">Entrevista completada</p><h1>Ya tenemos una primera imagen del proceso.</h1><p className="hero-lead">La demo termina aquí. En la siguiente fase añadiremos validación, cálculos y las reglas que convertirán estas respuestas en un diagnóstico prudente.</p><button className="secondary-button" onClick={() => setScreen("review")}>Revisar respuestas</button><p className="demo-note">Demo de Fase 1 · No se ha enviado información a ningún servicio externo.</p></main>
+      <main className="shell centered-shell"><div className="success-mark">✓</div><p className="kicker">Entrevista completada</p><h1>Ya tenemos una primera imagen del proceso.</h1><p className="hero-lead">La demo termina aquí. En fases posteriores añadiremos validación, cálculos y reglas para preparar un diagnóstico prudente.</p><button className="secondary-button" onClick={() => setScreen("review")}>Revisar respuestas</button><p className="demo-note">Demo de Fase 1 · No se ha enviado información a ningún servicio externo.</p></main>
     );
   }
 
   return (
     <main className="shell narrow-shell">
-      <header className="topbar"><button className="back-link" onClick={goBack} aria-label="Pausar y salir">← <span>Pausar y salir</span></button><Brand /><div className="progress-meta"><strong>{questionIndex + 1}</strong><span>/ {questions.length}</span><small>Tiempo est.: ~7 min</small></div></header>
+      <header className="topbar"><button className="back-link" onClick={goBack} aria-label={questionIndex === 0 ? "Salir de la entrevista" : "Volver a la pregunta anterior"}>← <span>{questionIndex === 0 ? "Salir" : "Anterior"}</span></button><Brand /><div className="progress-meta"><strong>{questionIndex + 1}</strong><span>/ {questions.length}</span><small>Tiempo est.: ~7 min</small></div></header>
       <div className="progress-track" aria-label={`Progreso: ${progress}%`}><span style={{ width: `${progress}%` }} /></div>
       <section className="question-section">
         <p className="kicker">{currentQuestion.eyebrow}</p>
         <h1>{currentQuestion.title}</h1>
         <p className="question-hint">{currentQuestion.hint}</p>
         <div className="answer-area">
-          {currentQuestion.type === "textarea" ? <textarea autoFocus value={currentAnswer} onChange={updateAnswer} placeholder={currentQuestion.placeholder} rows={5} /> : currentQuestion.type === "select" ? <select autoFocus value={currentAnswer} onChange={updateAnswer}><option value="">Selecciona una opción</option>{currentQuestion.options?.map((option) => <option key={option} value={option}>{option}</option>)}</select> : <input autoFocus type={currentQuestion.type} value={currentAnswer} onChange={updateAnswer} placeholder={currentQuestion.placeholder} min={currentQuestion.type === "number" ? 0 : undefined} />}
+          {currentQuestion.type === "textarea" ? <textarea autoFocus value={currentAnswer} onChange={updateAnswer} placeholder={currentQuestion.placeholder} rows={5} /> : currentQuestion.type === "select" ? <select autoFocus value={currentAnswer} onChange={updateAnswer}><option value="">Selecciona una opción</option>{currentQuestion.options?.map((option) => <option key={option} value={option}>{option}</option>)}</select> : <input autoFocus type={currentQuestion.type} value={currentInputValue} onChange={updateAnswer} placeholder={currentQuestion.placeholder} min={currentQuestion.type === "number" ? 0 : undefined} />}
           <div className="special-options"><span>También puedes responder:</span>{specialAnswers.map((answer) => <button key={answer} className={`chip ${currentAnswer === answer ? "selected" : ""}`} onClick={() => chooseSpecialAnswer(answer)}>{answer}</button>)}</div>
         </div>
       </section>
-      <footer className="question-footer"><span className="save-note">Guardado en esta demo</span><button className="primary-button" onClick={goNext}>{questionIndex === questions.length - 1 ? "Revisar respuestas" : "Continuar"} <span aria-hidden="true">→</span></button></footer>
+      <footer className="question-footer"><span className="save-note" role="status">{storageState === "saving" ? "Guardando…" : storageState === "saved" && hasInterview ? "Guardado" : storageState === "error" ? "No se pudo guardar; vuelve a intentarlo" : "Respuestas temporales"}</span><button className="primary-button" onClick={goNext}>{questionIndex === questions.length - 1 ? "Revisar respuestas" : "Continuar"} <span aria-hidden="true">→</span></button></footer>
     </main>
   );
 }
