@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, useEffect, useState } from "react";
+import type { InterviewAnalysis } from "@/lib/ai/interview-analysis";
 
 type Answer = string;
 
@@ -121,6 +122,18 @@ function displayAnswer(answer: Answer | undefined) {
   return answer?.trim() || "Sin respuesta";
 }
 
+function questionLabel(field: string) {
+  return questions.find((question) => question.id === field)?.title ?? field;
+}
+
+function confidenceLabel(confidence: "low" | "medium" | "high") {
+  return { low: "baja", medium: "media", high: "alta" }[confidence];
+}
+
+function issueCategoryLabel(category: "missing" | "ambiguous" | "inconsistent") {
+  return { missing: "dato faltante", ambiguous: "respuesta ambigua", inconsistent: "posible contradicción" }[category];
+}
+
 function LogoMark() {
   return (
     <svg aria-hidden="true" viewBox="0 0 40 40" fill="none">
@@ -150,6 +163,10 @@ export default function Home() {
   const [answers, setAnswers] = useState<Record<string, Answer>>(initialAnswers);
   const [hasInterview, setHasInterview] = useState(false);
   const [storageState, setStorageState] = useState<"loading" | "saved" | "saving" | "temporary" | "error">("loading");
+  const [analysis, setAnalysis] = useState<InterviewAnalysis | null>(null);
+  const [analysisState, setAnalysisState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [analysisConsent, setAnalysisConsent] = useState(false);
+  const [analysisError, setAnalysisError] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -226,6 +243,33 @@ export default function Home() {
     setAnswers((previous) => ({ ...previous, [currentQuestion.id]: answer }));
   }
 
+  async function analyzeInterview() {
+    if (!analysisConsent || analysisState === "loading") return;
+
+    setAnalysisState("loading");
+    setAnalysisError("");
+    try {
+      const response = await fetch("/api/interview/analyze", { method: "POST" });
+      const result = await response.json();
+      if (!response.ok) {
+        const messages: Record<string, string> = {
+          ai_not_configured: "La revisión con IA todavía no está configurada.",
+          analysis_limit_reached: "Ya se alcanzó el límite de análisis para esta entrevista.",
+          analysis_in_progress: "El análisis de esta entrevista ya está en curso.",
+          invalid_ai_analysis: "La revisión no pudo verificar el origen de todos los hallazgos.",
+          ai_service_unavailable: "El servicio de revisión no está disponible ahora.",
+        };
+        throw new Error(messages[result.error] ?? "No se pudo analizar la entrevista.");
+      }
+
+      setAnalysis(result.analysis);
+      setAnalysisState("ready");
+    } catch (error) {
+      setAnalysisError(error instanceof Error ? error.message : "No se pudo analizar la entrevista.");
+      setAnalysisState("error");
+    }
+  }
+
   function goNext() {
     if (questionIndex === questions.length - 1) {
       setScreen("review");
@@ -266,7 +310,7 @@ export default function Home() {
             <dl className="fact-list"><div><dt>Duración</dt><dd>5–8 min</dd></div><div><dt>Alcance</dt><dd>1 proceso</dd></div><div><dt>Resultado</dt><dd>Resumen revisable</dd></div></dl>
           </aside>
         </section>
-        <footer className="page-footer"><span>Primero texto. La voz será siempre opcional.</span><span>Fase 2 · Guardado privado por navegador</span></footer>
+        <footer className="page-footer"><span>Primero texto. La voz será siempre opcional.</span><span>Fase 3 · Revisión asistida opcional</span></footer>
       </main>
     );
   }
@@ -276,8 +320,45 @@ export default function Home() {
       <main className="shell narrow-shell">
         <header className="topbar"><Brand /><span className="status"><span className="status-dot" /> Revisión</span></header>
         <section className="review-header"><p className="kicker">Último paso</p><h1>Revisa lo que hemos entendido.</h1><p>Estos datos son un borrador editable. El diagnóstico se definirá en fases posteriores, con datos validados.</p></section>
+        <section className="analysis-panel" aria-labelledby="analysis-title">
+          <div className="analysis-heading">
+            <p className="kicker">Revisión asistida</p>
+            <h2 id="analysis-title">Buscar datos que necesitan aclaración</h2>
+            <p>Gemini analizará las respuestas guardadas, señalará posibles dudas y propondrá preguntas. No genera un diagnóstico.</p>
+          </div>
+          <label className="analysis-consent">
+            <input type="checkbox" checked={analysisConsent} onChange={(event) => setAnalysisConsent(event.target.checked)} />
+            <span>Autorizo enviar estas respuestas a Google Gemini para revisarlas.</span>
+          </label>
+          <button className="secondary-button" onClick={analyzeInterview} disabled={!analysisConsent || analysisState === "loading"}>
+            {analysisState === "loading" ? "Analizando…" : analysisState === "ready" ? "Actualizar análisis" : "Analizar respuestas"}
+          </button>
+          <p className="analysis-caution">Se usa el plan de pago de Google. Máximo dos análisis por entrevista; los resultados son sugerencias y deben revisarse.</p>
+          {analysisState === "error" && <p className="analysis-message" role="alert">{analysisError}</p>}
+          {analysisState === "loading" && <p className="analysis-message" role="status">Revisando las respuestas guardadas…</p>}
+        </section>
+        {analysis && <section className="analysis-results" aria-label="Resultado del análisis" aria-live="polite">
+          <h2>Hechos que encontró</h2>
+          {analysis.facts.length === 0 && <p>No se extrajeron hechos verificables adicionales.</p>}
+          {analysis.facts.map((fact, index) => <article className="analysis-item" key={`${fact.field}-${index}`}>
+            <span className="summary-label">{questionLabel(fact.field)} · confianza estimada {confidenceLabel(fact.confidence)}</span>
+            <strong>{fact.value}</strong>
+            <blockquote>“{fact.evidence}” <cite>· {questionLabel(fact.sourceField)}</cite></blockquote>
+          </article>)}
+          <h2>Datos por aclarar</h2>
+          {analysis.issues.length === 0 && <p>No se detectaron ambigüedades ni contradicciones claras.</p>}
+          {analysis.issues.map((issue, index) => <article className="analysis-item" key={`${issue.category}-${index}`}>
+            <span className="summary-label">{issueCategoryLabel(issue.category)} · {issue.fields.map(questionLabel).join(", ")}</span>
+            <strong>{issue.explanation}</strong>
+            {issue.evidence.map((evidence, evidenceIndex) => <blockquote key={`${evidence.sourceField}-${evidenceIndex}`}>
+              “{evidence.quote}” <cite>· {questionLabel(evidence.sourceField)}</cite>
+            </blockquote>)}
+            {issue.followUpQuestion && <p className="analysis-question"><span>Pregunta sugerida:</span> {issue.followUpQuestion}</p>}
+          </article>)}
+          <p className="analysis-caution">Las citas indican de dónde salió cada hallazgo. Confirma o corrige las respuestas antes de continuar.</p>
+        </section>}
         <section className="summary-card" aria-label="Resumen de respuestas">
-          {questions.map((question, index) => <div className="summary-row" key={question.id}><div><span className="summary-label">{question.title}</span><strong>{displayAnswer(answers[question.id])}</strong></div><button className="text-button" onClick={() => { setQuestionIndex(index); setScreen("questions"); }}>Editar</button></div>)}
+          {questions.map((question, index) => <div className="summary-row" key={question.id}><div><span className="summary-label">{question.title}</span><strong>{displayAnswer(answers[question.id])}</strong></div><button className="text-button" onClick={() => { setAnalysis(null); setAnalysisState("idle"); setQuestionIndex(index); setScreen("questions"); }}>Editar</button></div>)}
         </section>
         <div className="review-actions"><button className="secondary-button" onClick={() => { setQuestionIndex(questions.length - 1); setScreen("questions"); }}>Volver</button><button className="primary-button" onClick={() => setScreen("done")}>Confirmar resumen <span aria-hidden="true">→</span></button></div>
       </main>
@@ -286,7 +367,7 @@ export default function Home() {
 
   if (screen === "done") {
     return (
-      <main className="shell centered-shell"><div className="success-mark">✓</div><p className="kicker">Entrevista completada</p><h1>Ya tenemos una primera imagen del proceso.</h1><p className="hero-lead">La demo termina aquí. En fases posteriores añadiremos validación, cálculos y reglas para preparar un diagnóstico prudente.</p><button className="secondary-button" onClick={() => setScreen("review")}>Revisar respuestas</button><p className="demo-note">Demo de Fase 1 · No se ha enviado información a ningún servicio externo.</p></main>
+      <main className="shell centered-shell"><div className="success-mark">✓</div><p className="kicker">Entrevista completada</p><h1>Ya tenemos una primera imagen del proceso.</h1><p className="hero-lead">La entrevista termina aquí. Las sugerencias de revisión son orientativas; todavía no se ha calculado un diagnóstico ni un ahorro.</p><button className="secondary-button" onClick={() => setScreen("review")}>Revisar respuestas</button><p className="demo-note">Fase 3 · Revisión asistida opcional</p></main>
     );
   }
 
