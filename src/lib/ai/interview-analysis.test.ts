@@ -40,6 +40,31 @@ describe("structured interview analysis", () => {
     expect(interviewAnalysisSchema.safeParse(invalidAnalysis).success).toBe(false);
   });
 
+  it("rejects semantic issues without a source quote", () => {
+    const uncitedAnalysis = interviewAnalysisSchema.parse({
+      ...validAnalysis,
+      issues: [{ ...validAnalysis.issues[0], evidence: [] }],
+    });
+
+    expect(analysisHasSourceEvidence(uncitedAnalysis, answers)).toBe(false);
+  });
+
+  it("allows a missing-field issue without a quote only when the field is unknown", () => {
+    const missingAnalysis = interviewAnalysisSchema.parse({
+      facts: [],
+      issues: [{
+        category: "missing",
+        fields: ["processGoal"],
+        explanation: "No se indicó el objetivo del proceso.",
+        evidence: [],
+        followUpQuestion: "¿Qué resultado debería producir el proceso?",
+      }],
+    });
+
+    expect(analysisHasSourceEvidence(missingAnalysis, answers)).toBe(true);
+    expect(analysisHasSourceEvidence(missingAnalysis, { ...answers, processGoal: "Preparar pedidos" })).toBe(false);
+  });
+
   it("requires evidence quotes to come from the cited answer", () => {
     const parsed = interviewAnalysisSchema.parse(validAnalysis);
     expect(analysisHasSourceEvidence(parsed, answers)).toBe(true);

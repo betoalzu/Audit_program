@@ -32,6 +32,7 @@ export async function analyzeInterviewAnswers(answers: InterviewAnswers) {
       "No inventes hechos, cifras, ahorros, soluciones ni contradicciones. Solo extrae un hecho si puedes citar literalmente su origen.",
       "Cada cita debe ser una subcadena exacta de la respuesta identificada por sourceField.",
       "Una respuesta especial como 'No lo se' es un dato desconocido, no un hecho confirmado.",
+      "Puedes señalar un campo faltante sin cita solo si está vacío o tiene una respuesta especial; no llames faltante a un campo con respuesta conocida.",
       "Si un dato falta, pregunta solo lo necesario para aclararlo. Las preguntas son sugerencias para revision humana.",
       "Devuelve como maximo 12 hechos y 5 incidencias. Cada explicacion y pregunta debe ser breve.",
     ].join(" "),
