@@ -12,16 +12,16 @@
 
 ## Estado de fases
 
-Fase 1 y Fase 2 completas y verificadas. La migración se aplicó a Supabase y el recorrido POST/PUT/GET guardó y recuperó un borrador; los datos sintéticos de prueba se eliminaron.
+Fase 1 y Fase 2 completas y verificadas. Fase 3 en curso: Gemini está integrado detrás de la ruta de servidor con salida Zod, citas verificables, consentimiento y límite de uso. Falta configurar una clave de pago y probar una respuesta real del modelo.
 
 ## Próximo foco
 
-El siguiente foco es definir el alcance y los criterios de Fase 3 antes de integrar extracción con IA.
+Configurar `GOOGLE_GENERATIVE_AI_API_KEY` con una cuenta de Gemini API de pago y evaluar la extracción con ejemplos representativos; no compartir ni versionar la clave.
 
 ## Restricciones vigentes
 
 - Un único proceso por entrevista.
-- Sin voz, IA, correo, cuentas de usuario ni integraciones de negocio.
+- Sin voz, correo, cuentas de usuario ni integraciones de negocio.
 - La sesión anónima usa la cookie privada como credencial; no permite recuperar la entrevista desde otro dispositivo.
 - No calcular costes o ahorros sin datos confirmados y reglas explícitas.
 - Conservar los cambios existentes y trabajar en pasos pequeños verificables.

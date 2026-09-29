@@ -17,6 +17,7 @@
 - `npm test`: pruebas Vitest.
 - `npm run db:generate`: genera migraciones Drizzle.
 - `npm run db:migrate`: aplica migraciones PostgreSQL. Requiere `DATABASE_URL`.
+- La revisión IA usa `ai` 6 y `@ai-sdk/google` 3; requiere `GOOGLE_GENERATIVE_AI_API_KEY` de Gemini API de pago para probar el proveedor.
 - Drizzle carga `.env` mediante `dotenv/config`; Next.js también puede leer `.env.local`.
 
 La aplicación también requiere PostgreSQL para persistencia real; consulta `README.md` para el arranque local.
@@ -29,6 +30,7 @@ La aplicación también requiere PostgreSQL para persistencia real; consulta `RE
 - PostgreSQL se configura con `DATABASE_URL`; el esquema Drizzle y sus migraciones están en `src/lib/db/` y `drizzle/`.
 - La sesión es anónima y usa una cookie privada de 30 días. Sin base disponible, la app indica que las respuestas son temporales.
 - PostgreSQL de Supabase está conectado y la migración inicial está aplicada; se validó el ciclo HTTP de creación, guardado y recuperación.
+- Gemini 3.1 Flash-Lite usa salida estructurada y queda encapsulado en `src/lib/ai/`; la ruta persiste el resultado y el uso. El comportamiento sin clave está validado; falta una llamada real.
 
 ## Stack previsto, aún no integrado
 

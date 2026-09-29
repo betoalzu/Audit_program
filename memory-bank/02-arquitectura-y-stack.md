@@ -29,6 +29,14 @@
 - No hay cuentas ni recuperación entre dispositivos. La cookie funciona como credencial de acceso y debe tratarse como privada.
 - Si la persistencia falla, la interfaz lo indica y no afirma que guardó los datos.
 
+### Extracción y aclaraciones de Fase 3
+
+- Vercel AI SDK 6 con el proveedor Google `@ai-sdk/google`.
+- Gemini 3.1 Flash-Lite en la API de pago; la clave `GOOGLE_GENERATIVE_AI_API_KEY` solo vive en el servidor.
+- Una llamada estructurada con Zod al revisar, con salida máxima de 1,200 tokens, cero reintentos automáticos y dos ejecuciones como máximo por entrevista.
+- Cachear el resultado por hash de respuestas, guardar modelo/versión/uso y verificar que cada hecho tenga cita literal en su campo de origen.
+- Consentimiento explícito antes de enviar las respuestas a Google; la IA propone hechos y preguntas, pero no cambia ni confirma datos.
+
 ### Servicios posteriores
 
 - IA encapsulada detrás de interfaces propias de extracción y evaluación.

@@ -14,7 +14,15 @@ Versionar modelos, añadir PostgreSQL, validación de servidor y pruebas de cál
 
 ## Fase 3: extracción y aclaraciones
 
-Integrar un modelo existente detrás de una interfaz, con salida estructurada, procedencia y revisión humana.
+Integrar Gemini 3.1 Flash-Lite mediante Vercel AI SDK 6, con salida estructurada, procedencia y revisión humana. Usar el nivel de pago, consentimiento antes del envío, máximo de dos llamadas por entrevista y reutilizar resultados del mismo borrador. La clave vive solo en el servidor.
+
+- Extraer hechos con campo de origen, cita literal y nivel de confianza estimado.
+- Detectar campos faltantes, ambigüedades y posibles contradicciones.
+- Proponer preguntas de seguimiento breves, sin contestarlas ni modificar los datos automáticamente.
+- Validar la salida con Zod y conservar modelo, versión del prompt y consumo de tokens.
+- Evaluar con casos representativos; separar error del proveedor, respuesta inválida y falta de configuración.
+
+La tarifa consultada de Gemini 3.1 Flash-Lite es $0.25/1M tokens de entrada y $1.50/1M de salida. Revisar [precios](https://ai.google.dev/gemini-api/docs/pricing) y [tratamiento de datos](https://ai.google.dev/gemini-api/terms) antes de un piloto, pues pueden cambiar.
 
 ## Fase 4: diagnóstico e informe
 
