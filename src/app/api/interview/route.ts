@@ -1,19 +1,15 @@
-import { createHash, randomBytes } from "node:crypto";
-import { and, eq, gt } from "drizzle-orm";
+import { randomBytes } from "node:crypto";
+import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { getDatabase } from "@/lib/db";
 import { companies, interviewSessions, interviews, processes } from "@/lib/db/schema";
 import { interviewDraftSchema, questionnaireSchemaVersion } from "@/lib/interview-schema";
+import { getCurrentInterviewSession, hashInterviewSessionToken, interviewSessionCookieName } from "@/lib/interview-session";
 
 export const runtime = "nodejs";
 
-const cookieName = "atlas_interview";
 const sessionLifetimeSeconds = 60 * 60 * 24 * 30;
 const sessionLifetimeMilliseconds = sessionLifetimeSeconds * 1000;
-
-function hashToken(token: string) {
-  return createHash("sha256").update(token).digest("hex");
-}
 
 function json(data: unknown, status = 200) {
   return Response.json(data, {
@@ -22,25 +18,9 @@ function json(data: unknown, status = 200) {
   });
 }
 
-async function getCurrentSession() {
-  const token = (await cookies()).get(cookieName)?.value;
-  if (!token) return null;
-
-  const [session] = await getDatabase()
-    .select({ interviewId: interviewSessions.interviewId })
-    .from(interviewSessions)
-    .where(and(
-      eq(interviewSessions.tokenHash, hashToken(token)),
-      gt(interviewSessions.expiresAt, new Date()),
-    ))
-    .limit(1);
-
-  return session ?? null;
-}
-
 export async function GET() {
   try {
-    const session = await getCurrentSession();
+    const session = await getCurrentInterviewSession();
     if (!session) return json({ interview: null });
 
     const [interview] = await getDatabase()
@@ -76,12 +56,12 @@ export async function POST() {
       await transaction.insert(processes).values({ interviewId: interview.id });
       await transaction.insert(interviewSessions).values({
         interviewId: interview.id,
-        tokenHash: hashToken(token),
+        tokenHash: hashInterviewSessionToken(token),
         expiresAt,
       });
     });
 
-    (await cookies()).set(cookieName, token, {
+    (await cookies()).set(interviewSessionCookieName, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
@@ -110,11 +90,11 @@ export async function PUT(request: Request) {
   if (!parsed.success) return json({ error: "invalid_draft" }, 422);
 
   try {
-    const session = await getCurrentSession();
+    const session = await getCurrentInterviewSession();
     if (!session) return json({ error: "interview_not_found" }, 404);
 
     const cookieStore = await cookies();
-    const token = cookieStore.get(cookieName)?.value;
+    const token = cookieStore.get(interviewSessionCookieName)?.value;
     if (!token) return json({ error: "interview_not_found" }, 404);
 
     const [interview] = await getDatabase()
@@ -169,7 +149,7 @@ export async function PUT(request: Request) {
       }).where(eq(interviewSessions.interviewId, session.interviewId));
     });
 
-    cookieStore.set(cookieName, token, {
+    cookieStore.set(interviewSessionCookieName, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
