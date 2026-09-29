@@ -5,6 +5,20 @@ import type { FollowUpResponse, InterviewAnalysis } from "@/lib/ai/interview-ana
 
 type Answer = string;
 
+type InterviewLoadResponse = {
+  interview: {
+    answers: Record<string, Answer>;
+    currentStep: number;
+    currentScreen: "welcome" | "questions" | "review" | "done";
+  } | null;
+};
+
+type AnalysisResponse = {
+  analysis?: InterviewAnalysis;
+  followUpResponses?: FollowUpResponse[];
+  error?: string;
+};
+
 type Question = {
   id: string;
   eyebrow: string;
@@ -118,6 +132,17 @@ const specialAnswers = ["No lo sé", "No aplica", "Prefiero no responder"];
 
 const initialAnswers: Record<string, Answer> = {};
 
+async function readJson<T>(response: Response): Promise<T | null> {
+  const body = await response.text();
+  if (!body) return null;
+
+  try {
+    return JSON.parse(body) as T;
+  } catch {
+    return null;
+  }
+}
+
 function questionLabel(field: string) {
   return questions.find((question) => question.id === field)?.title ?? field;
 }
@@ -179,7 +204,9 @@ export default function Home() {
     fetch("/api/interview", { cache: "no-store" })
       .then(async (response) => {
         if (!response.ok) throw new Error("Interview storage is unavailable");
-        return response.json();
+        const result = await readJson<InterviewLoadResponse>(response);
+        if (!result) throw new Error("Interview storage returned an invalid response");
+        return result;
       })
       .then((result) => {
         if (!active) return;
@@ -255,7 +282,7 @@ export default function Home() {
     setAnalysisError("");
     try {
       const response = await fetch("/api/interview/analyze", { method: "POST" });
-      const result = await response.json();
+      const result = await readJson<AnalysisResponse>(response);
       if (!response.ok) {
         const messages: Record<string, string> = {
           ai_not_configured: "La revisión con IA todavía no está configurada.",
@@ -264,8 +291,9 @@ export default function Home() {
           invalid_ai_analysis: "La revisión no pudo verificar el origen de todos los hallazgos.",
           ai_service_unavailable: "El servicio de revisión no está disponible ahora.",
         };
-        throw new Error(messages[result.error] ?? "No se pudo analizar la entrevista.");
+        throw new Error(messages[result?.error ?? ""] ?? "No se pudo analizar la entrevista.");
       }
+      if (!result?.analysis) throw new Error("La respuesta del análisis no es válida.");
 
       setAnalysis(result.analysis);
       setFollowUpResponses(result.followUpResponses ?? []);
@@ -292,8 +320,8 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ issueIndex, answer: skipped ? null : answer, skipped }),
       });
-      const result = await response.json();
-      if (!response.ok) throw new Error("No se pudo guardar la aclaración.");
+      const result = await readJson<{ followUpResponses?: FollowUpResponse[] }>(response);
+      if (!response.ok || !result?.followUpResponses) throw new Error("No se pudo guardar la aclaración.");
 
       setFollowUpResponses(result.followUpResponses);
     } catch (error) {
