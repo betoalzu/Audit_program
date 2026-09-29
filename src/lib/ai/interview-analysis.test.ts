@@ -118,6 +118,21 @@ describe("structured interview analysis", () => {
     expect(withoutFollowUp.success).toBe(true);
   });
 
+  it("accepts stored findings created before issue confidence was recorded", () => {
+    const legacyAnalysis = interviewAnalysisSchema.parse({
+      facts: [],
+      issues: [{
+        category: "ambiguous",
+        fields: ["cases"],
+        explanation: "No se indica el periodo del volumen.",
+        evidence: [{ sourceField: "processName", quote: "Recepción de pedidos" }],
+        followUpQuestion: "¿A qué periodo corresponde ese volumen?",
+      }],
+    });
+
+    expect(legacyAnalysis.issues[0].confidence).toBeNull();
+  });
+
   it("accepts either a clarification response or an explicit omission", () => {
     expect(followUpResponseSchema.safeParse({
       issueIndex: 0,

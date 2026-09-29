@@ -36,7 +36,7 @@ export const interviewAnalysisSchema = z.object({
     fields: z.array(fieldId).min(1).max(3),
     explanation: z.string().min(1).max(300),
     evidence: z.array(evidenceSchema).max(3),
-    confidence: z.enum(["low", "medium", "high"]).nullable(),
+    confidence: z.enum(["low", "medium", "high"]).nullable().default(null),
     followUpQuestion: z.string().max(240).nullable(),
   }).strict()).max(5),
 }).strict();
